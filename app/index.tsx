@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } fr
 import { Food, PersonalityType, PERSONALITY_CONFIGS } from "../types/food";
 import { generateFoodMessage } from "../utils/messageGenerator";
 import { formatDateShort, addDays } from "../utils/dateUtils";
+import Header from "../components/Header";
 
 // サンプルデータ
 const sampleFoods: Food[] = [
@@ -52,6 +53,11 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
+  const handleAddPress = () => {
+    console.log('食材を追加ボタンが押されました！');
+    // 後でregister.tsxに遷移する処理を追加予定
+  };
+
   const FoodBubble = ({ food }: { food: Food }) => {
     const message = generateFoodMessage(food);
     const personality = PERSONALITY_CONFIGS[food.personality];
@@ -89,10 +95,13 @@ export default function Home() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>🧊 つめたみボイス</Text>
-        <Text style={styles.subtitle}>冷蔵庫の中の声に耳を傾けて...</Text>
-      </View>
+      <Header 
+        title="🧊 つめたみボイス"
+        subtitle="冷蔵庫の中の声に耳を傾けて..."
+        showAddButton={true}
+        onAddPress={handleAddPress}
+        backgroundColor="#ffffffff"
+      />
       
       <ScrollView style={styles.chatContainer} showsVerticalScrollIndicator={false}>
         {foods.map((food) => (
@@ -106,10 +115,6 @@ export default function Home() {
           </View>
         )}
       </ScrollView>
-
-      <TouchableOpacity style={styles.addButton}>
-        <Text style={styles.addButtonText}>+</Text>
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -118,25 +123,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
-  },
-  header: {
-    backgroundColor: "#4a90e2",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomLeftRadius: 15,
-    borderBottomRightRadius: 15,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#e8f4fd",
-    textAlign: "center",
-    marginTop: 4,
   },
   chatContainer: {
     flex: 1,
@@ -210,29 +196,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#999",
     textAlign: "center",
-  },
-  addButton: {
-    position: "absolute",
-    bottom: 30,
-    right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#4a90e2",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  addButtonText: {
-    fontSize: 30,
-    color: "white",
-    fontWeight: "bold",
   },
 });
