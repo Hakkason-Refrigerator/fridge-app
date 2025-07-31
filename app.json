@@ -24,6 +24,10 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "scheme": "fridge-app",
+    "experiments": {
+      "typedRoutes": true
     }
   }
 }
