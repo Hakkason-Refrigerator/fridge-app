@@ -8,6 +8,7 @@ type FoodStore = {
     error: string | null;
     fetchFoods: () => Promise<void>;
     addFood: (newFood: Omit<Food, 'id'>) => Promise<void>;
+    updateFood: (id: string, updates: Partial<Food>) => Promise<void>;
     deleteFood: (id: string) => Promise<void>;
 };
 
@@ -29,8 +30,8 @@ export const useFoodStore = create<FoodStore>((set) => ({
             id: item.id,
             name: item.name,
             comment: item.comment,
-            expiryDate: item.expiry_date ? new Date(item.expiry_date) : undefined,
-            registeredDate: item.registered_date ? new Date(item.registered_date) : undefined,
+            expiryDate: item.expiry_date ? new Date(item.expiry_date) : new Date(),
+            registeredDate: item.registered_date ? new Date(item.registered_date) : new Date(),
             isConsumed: item.is_consumed,
         }));
         set({ foods: camelFoods, isLoading: false });
@@ -58,6 +59,32 @@ export const useFoodStore = create<FoodStore>((set) => ({
         const { error } = await supabase.from('foods').insert([dbFood]);
         if (error) {
             console.error('Insert error:', error.message);
+            set({ error: error.message });
+            return;
+        }
+        await useFoodStore.getState().fetchFoods();
+    },
+
+    updateFood: async (id, updates) => {
+        // キャメルケース→スネークケース変換
+        const dbUpdates: any = {};
+        if (updates.name !== undefined) dbUpdates.name = updates.name;
+        if (updates.comment !== undefined) dbUpdates.comment = updates.comment;
+        if (updates.expiryDate !== undefined) {
+            dbUpdates.expiry_date = updates.expiryDate instanceof Date 
+                ? updates.expiryDate.toISOString().slice(0, 10)
+                : updates.expiryDate;
+        }
+        if (updates.registeredDate !== undefined) {
+            dbUpdates.registered_date = updates.registeredDate instanceof Date 
+                ? updates.registeredDate.toISOString().slice(0, 10)
+                : updates.registeredDate;
+        }
+        if (updates.isConsumed !== undefined) dbUpdates.is_consumed = updates.isConsumed;
+
+        const { error } = await supabase.from('foods').update(dbUpdates).eq('id', id);
+        if (error) {
+            console.error('Update error:', error.message);
             set({ error: error.message });
             return;
         }

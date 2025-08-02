@@ -3,59 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Linking, Alert, ScrollView, T
 import { useLocalSearchParams, router } from 'expo-router';
 import { Food } from '../types/food';
 import { getExpiryInfo } from '../utils/expiryUtils';
-import { addDays } from '../utils/dateUtils';
-
-// サンプルデータ（indexと同じデータを使用）
-const sampleFoods: Food[] = [
-  {
-    id: '1',
-    name: '牛乳',
-    expiryDate: addDays(new Date(), 2),
-    registeredDate: new Date(),
-    comment: '早めに飲んでくださいね〜',
-    isConsumed: false
-  },
-  {
-    id: '2',
-    name: '卵',
-    expiryDate: addDays(new Date(), 8),
-    registeredDate: new Date(),
-    comment: 'オムライス作ってもらえる？',
-    isConsumed: false
-  },
-  {
-    id: '3',
-    name: 'バナナ',
-    expiryDate: addDays(new Date(), 1),
-    registeredDate: new Date(),
-    comment: '明日には食べ頃だよ！',
-    isConsumed: false
-  },
-  {
-    id: '4',
-    name: 'パン',
-    expiryDate: addDays(new Date(), -1),
-    registeredDate: new Date(),
-    comment: 'ごめん...期限切れちゃった',
-    isConsumed: false
-  },
-  {
-    id: '5',
-    name: 'ヨーグルト',
-    expiryDate: addDays(new Date(), 0),
-    registeredDate: new Date(),
-    comment: '今日中に食べてね！',
-    isConsumed: false
-  },
-  {
-    id: '6',
-    name: 'リンゴ',
-    expiryDate: addDays(new Date(), 6),
-    registeredDate: new Date(),
-    comment: 'まだまだ新鮮だよ〜',
-    isConsumed: false
-  }
-];
+import { useFoodStore } from '../store/foodStore';
 
 // 食材名からレシピ検索URLを生成する関数
 const generateRecipeUrls = (foodName: string) => {
@@ -69,9 +17,10 @@ const generateRecipeUrls = (foodName: string) => {
 
 export default function FoodDetailScreen() {
   const { id } = useLocalSearchParams();
+  const { foods, updateFood } = useFoodStore();
   
   // IDに基づいて食材データを取得
-  const food = sampleFoods.find(f => f.id === id);
+  const food = foods.find(f => f.id === id);
 
   // 編集状態の管理
   const [isEditing, setIsEditing] = useState(false);
@@ -95,11 +44,22 @@ export default function FoodDetailScreen() {
   }
 
   // 保存処理
-  const handleSave = () => {
-    // TODO: 実際のデータ更新処理（Zustand導入時に実装）
-    Alert.alert('保存完了', '変更が保存されました', [
-      { text: 'OK', onPress: () => setIsEditing(false) }
-    ]);
+  const handleSave = async () => {
+    if (!food) return;
+    
+    try {
+      await updateFood(food.id, {
+        name: editedName,
+        expiryDate: new Date(editedExpiryDate),
+        registeredDate: new Date(editedRegisteredDate),
+      });
+      Alert.alert('保存完了', '変更が保存されました', [
+        { text: 'OK', onPress: () => setIsEditing(false) }
+      ]);
+    } catch (error) {
+      Alert.alert('エラー', '保存に失敗しました');
+      console.error('Save error:', error);
+    }
   };
 
   // キャンセル処理
