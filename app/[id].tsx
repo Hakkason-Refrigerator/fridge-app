@@ -5,14 +5,17 @@ import { Food } from '../types/food';
 import { getExpiryInfo } from '../utils/expiryUtils';
 import { useFoodStore } from '../store/foodStore';
 
+// レシピサイトの設定
+const RECIPE_SITES = [
+  { name: 'クックパッド', color: '#ff8c00', urlTemplate: 'https://cookpad.com/search/' },
+  { name: 'クラシル', color: '#e64312ff', urlTemplate: 'https://www.kurashiru.com/search?query=' },
+  { name: '楽天レシピ', color: '#ffae01ff', urlTemplate: 'https://recipe.rakuten.co.jp/search/' }
+];
+
 // 食材名からレシピ検索URLを生成する関数
-const generateRecipeUrls = (foodName: string) => {
+const generateRecipeUrl = (foodName: string, urlTemplate: string) => {
   const encodedName = encodeURIComponent(foodName);
-  return {
-    cookpad: `https://cookpad.com/search/${encodedName}`,
-    kurashiru: `https://www.kurashiru.com/search?query=${encodedName}`,
-    rakuten: `https://recipe.rakuten.co.jp/search/${encodedName}/`,
-  };
+  return urlTemplate + encodedName + (urlTemplate.includes('rakuten') ? '/' : '');
 };
 
 export default function FoodDetailScreen() {
@@ -70,8 +73,6 @@ export default function FoodDetailScreen() {
     setIsEditing(false);
   };
 
-  const recipeUrls = generateRecipeUrls(food.name);
-
   const openRecipeUrl = async (url: string, siteName: string) => {
     try {
       const supported = await Linking.canOpenURL(url);
@@ -85,12 +86,11 @@ export default function FoodDetailScreen() {
     }
   };
 
+  // 期限情報を取得（メインページと同じ色を使用）
+  const expiryInfo = getExpiryInfo(food.expiryDate, food.registeredDate);
   const daysDifference = Math.ceil((food.expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
   const expiryStatus = daysDifference > 0 ? `あと${daysDifference}日` : 
                       daysDifference === 0 ? '今日が期限' : `${Math.abs(daysDifference)}日経過`;
-
-  // 期限情報を取得（メインページと同じ色を使用）
-  const expiryInfo = getExpiryInfo(food.expiryDate, food.registeredDate);
 
   return (
     <ScrollView style={styles.container}>
@@ -171,7 +171,7 @@ export default function FoodDetailScreen() {
             )}
           </View>
           
-          <Text style={[styles.infoText, { color: daysDifference < 0 ? '#ff4444' : '#333' }]}>
+          <Text style={[styles.infoText, { color: expiryInfo.color }]}>
             状態: {expiryStatus}
           </Text>
         </View>
@@ -182,26 +182,15 @@ export default function FoodDetailScreen() {
             {food.name}を使った料理レシピを探してみましょう！
           </Text>
           
-          <TouchableOpacity 
-            style={[styles.recipeButton, { backgroundColor: '#ff8c00' }]}
-            onPress={() => openRecipeUrl(recipeUrls.cookpad, 'クックパッド')}
-          >
-            <Text style={styles.recipeButtonText}>クックパッドで検索</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.recipeButton, { backgroundColor: '#e64312ff' }]}
-            onPress={() => openRecipeUrl(recipeUrls.kurashiru, 'クラシル')}
-          >
-            <Text style={styles.recipeButtonText}>クラシルで検索</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.recipeButton, { backgroundColor: '#ffae01ff' }]}
-            onPress={() => openRecipeUrl(recipeUrls.rakuten, '楽天レシピ')}
-          >
-            <Text style={styles.recipeButtonText}>楽天レシピで検索</Text>
-          </TouchableOpacity>
+          {RECIPE_SITES.map((site) => (
+            <TouchableOpacity 
+              key={site.name}
+              style={[styles.recipeButton, { backgroundColor: site.color }]}
+              onPress={() => openRecipeUrl(generateRecipeUrl(food.name, site.urlTemplate), site.name)}
+            >
+              <Text style={styles.recipeButtonText}>{site.name}で検索</Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
     </ScrollView>

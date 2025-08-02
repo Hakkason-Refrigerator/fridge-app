@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Alert } from "react-native";
 import Header from "../components/Header";
 import FoodCard from "../components/FoodCard";
+import Mascot from "../components/Mascot";
 import { useRouter } from "expo-router";
 import { useFoodStore } from "../store/foodStore";
 
@@ -74,6 +75,9 @@ export default function Home() {
           </View>
         )}
       </ScrollView>
+      
+      {/* マスコットキャラクター */}
+      <Mascot />
     </SafeAreaView>
   );
 }
