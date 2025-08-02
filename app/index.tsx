@@ -4,15 +4,27 @@ import Header from "../components/Header";
 import FoodCard from "../components/FoodCard";
 import { useRouter } from "expo-router";
 import { useFoodStore } from "../store/foodStore";
-
-
+import { supabase } from "../lib/supabase";
+import { signInIfNeeded } from "../lib/auth"; 
 
 export default function Home() {
   const { foods, fetchFoods, deleteFood } = useFoodStore();
   const router = useRouter();
 
   useEffect(() => {
-    fetchFoods();
+    signInIfNeeded(); // ログインチェックを実行
+    const signInAnonymously = async () => {
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        console.error("匿名ログインに失敗しました:", error.message);
+      } else {
+        console.log("匿名ログイン成功:", data);
+        fetchFoods(); // ✅ ログイン成功後に fetch 「食材データ（foods）」を fetchFoods() 関数でSupabaseから読み込み
+      }
+    };
+
+    signInAnonymously();
+    
   }, []);
 
   // 期限順にソートされた食材リストを取得

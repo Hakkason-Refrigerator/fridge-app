@@ -18,52 +18,94 @@ export const useFoodStore = create<FoodStore>((set) => ({
     error: null,
 
     fetchFoods: async () => {
-        set({ isLoading: true, error: null });
-        const { data, error } = await supabase.from('foods').select('*').order('expiry_date');
-        if (error) {
-            console.error('Fetch error:', error.message);
-            set({ error: error.message, isLoading: false });
-            return;
-        }
-        // スネークケース→キャメルケース変換＋日付型変換
-        const camelFoods = (data || []).map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            comment: item.comment,
-            expiryDate: item.expiry_date ? new Date(item.expiry_date) : new Date(),
-            registeredDate: item.registered_date ? new Date(item.registered_date) : new Date(),
-            isConsumed: item.is_consumed,
-        }));
-        set({ foods: camelFoods, isLoading: false });
-    },
+    set({ isLoading: true, error: null });
+
+    // 🔑 匿名ユーザーIDの取得
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        console.error("ユーザー情報の取得に失敗しました", authError);
+        set({ error: authError?.message ?? "認証エラー", isLoading: false });
+        return;
+    }
+
+    // 🔍 user_id に基づくデータ取得
+    const { data, error } = await supabase
+        .from('foods')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('expiry_date');
+
+    if (error) {
+        console.error('Fetch error:', error.message);
+        set({ error: error.message, isLoading: false });
+        return;
+    }
+
+    // 🛠 スネークケース → キャメルケース + Date 変換
+    const camelFoods = (data || []).map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        comment: item.comment,
+        expiryDate: item.expiry_date ? new Date(item.expiry_date) : new Date(),
+        registeredDate: item.registered_date ? new Date(item.registered_date) : new Date(),
+        isConsumed: item.is_consumed,
+    }));
+
+    set({ foods: camelFoods, isLoading: false });
+    }
+    ,
 
     addFood: async (newFood) => {
-        // キャメルケース→スネークケース変換
-        const dbFood = {
-            name: newFood.name,
-            comment: newFood.comment,
-            expiry_date: (newFood as any).expiry_date
-                || (typeof (newFood as any).expiryDate === 'string'
-                    ? (newFood as any).expiryDate.slice(0, 10)
-                    : (newFood as any).expiryDate instanceof Date
-                        ? (newFood as any).expiryDate.toISOString().slice(0, 10)
-                        : undefined),
-            registered_date: (newFood as any).registered_date
-                || (typeof (newFood as any).registeredDate === 'string'
-                    ? (newFood as any).registeredDate
-                    : (newFood as any).registeredDate instanceof Date
-                        ? (newFood as any).registeredDate.toISOString()
-                        : undefined),
-            is_consumed: (newFood as any).is_consumed ?? newFood.isConsumed ?? false,
-        };
-        const { error } = await supabase.from('foods').insert([dbFood]);
-        if (error) {
-            console.error('Insert error:', error.message);
-            set({ error: error.message });
-            return;
-        }
-        await useFoodStore.getState().fetchFoods();
+    // 🔑 現在のユーザー情報を取得
+    const {
+        data: { user },
+        error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        console.error("ユーザー情報の取得に失敗しました", authError);
+        set({ error: authError?.message ?? "認証エラー" });
+        return;
+    }
+
+    // 🛠 キャメルケース→スネークケース変換 + user_id 追加
+    const dbFood = {
+        name: newFood.name,
+        comment: newFood.comment,
+        expiry_date: (newFood as any).expiry_date
+            || (typeof (newFood as any).expiryDate === 'string'
+                ? (newFood as any).expiryDate.slice(0, 10)
+                : (newFood as any).expiryDate instanceof Date
+                    ? (newFood as any).expiryDate.toISOString().slice(0, 10)
+                    : undefined),
+        registered_date: (newFood as any).registered_date
+            || (typeof (newFood as any).registeredDate === 'string'
+                ? (newFood as any).registeredDate
+                : (newFood as any).registeredDate instanceof Date
+                    ? (newFood as any).registeredDate.toISOString()
+                    : undefined),
+        is_consumed: (newFood as any).is_consumed ?? newFood.isConsumed ?? false,
+
+        // ✅ ユーザーIDを付与
+        user_id: user.id,
+    };
+
+    const { error } = await supabase.from('foods').insert([dbFood]);
+    if (error) {
+        console.error('Insert error:', error.message);
+        set({ error: error.message });
+        return;
+    }
+
+    await useFoodStore.getState().fetchFoods();
     },
+
+
+    
 
     updateFood: async (id, updates) => {
         // キャメルケース→スネークケース変換
