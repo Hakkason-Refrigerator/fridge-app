@@ -86,7 +86,8 @@ export default function Home() {
 
   const handleFoodCardPress = (food: Food) => {
     console.log(`${food.name}のカードが押されました！`);
-    // 後で食材詳細画面に遷移する処理を追加予定
+    // 食材詳細画面に遷移
+    router.push(`/${food.id}`);
   };
 
   // 食材削除のハンドラー関数
