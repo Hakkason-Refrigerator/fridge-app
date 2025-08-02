@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Link } from "expo-router";
 
 interface HeaderProps {
   title: string; 
@@ -20,7 +21,7 @@ export default function Header({ title, subtitle, showAddButton, onAddPress, bac
       {showAddButton && (
         <TouchableOpacity onPress={onAddPress} style={styles.addButton}>
           <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> 
       )}
     </View>
   );

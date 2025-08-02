@@ -4,6 +4,7 @@ import { Food } from "../types/food";
 import { addDays } from "../utils/dateUtils";
 import Header from "../components/Header";
 import FoodCard from "../components/FoodCard";
+import { useRouter } from "expo-router";
 
 // サンプルデータ（様々な期限の食材でテスト）
 const sampleFoods: Food[] = [
@@ -61,6 +62,7 @@ export default function Home() {
   // 食材リストを状態として管理（削除機能のため）
   const [foods, setFoods] = useState<Food[]>(sampleFoods);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const router = useRouter();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -76,9 +78,10 @@ export default function Home() {
     return a.expiryDate.getTime() - b.expiryDate.getTime();
   });
 
+  //食材追加ページへ移動
   const handleAddPress = () => {
     console.log('食材を追加ボタンが押されました！');
-    // 後でregister.tsxに遷移する処理を追加予定
+    router.push('/register');
   };
 
   const handleFoodCardPress = (food: Food) => {
@@ -129,7 +132,7 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: '#e0ecff', // 明るい青色
   },
   chatContainer: {
     flex: 1,
