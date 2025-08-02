@@ -1,13 +1,95 @@
-
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Platform, StyleSheet } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useRouter } from "expo-router";
+import { useFoodStore } from "../store/foodStore";
 
-const styles = StyleSheet.create({
+export default function Register() {
+    const router = useRouter();
+
+    const [name, setName] = useState("");
+    const [comment, setComment] = useState("");
+    const [expiryDate, setExpiryDate] = useState(new Date());
+    const [showDatePicker, setShowDatePicker] = useState(false);
+
+    const handleSubmit = async () => {
+        if (!name) {
+        alert("食材名を入力してください");
+        return;
+        }
+
+        try {
+
+        await useFoodStore.getState().addFood({
+            name,
+            comment,
+            expiry_date: expiryDate.toISOString().slice(0, 10), // YYYY-MM-DD
+            registered_date: new Date().toISOString(),
+            is_consumed: false,
+        } as any);
+
+        router.back(); // 登録後に前の画面に戻る
+        } catch (error) {
+        console.error("登録エラー:", error);
+        alert("食材の登録に失敗しました");
+        }
+    };
+
+    return (
+        <View style={styles.container}>
+        <Text style={styles.title}>食材を登録</Text>
+
+        {/* 食材名 */}
+        <Text style={styles.label}>📝 食材名</Text>
+        <TextInput
+            style={styles.input}
+            placeholder="例：ヨーグルト"
+            value={name}
+            onChangeText={setName}
+        />
+
+        {/* コメント */}
+        <Text style={styles.label}>💬 コメント（任意）</Text>
+        <TextInput
+            style={styles.input}
+            placeholder="例：早めに食べてね〜"
+            value={comment}
+            onChangeText={setComment}
+        />
+
+        {/* 賞味期限 */}
+        <Text style={styles.label}>📅 賞味期限</Text>
+        <TouchableOpacity
+            style={[styles.input, styles.dateButton]}
+            onPress={() => setShowDatePicker(true)}
+        >
+            <Text style={styles.dateText}>{expiryDate.toLocaleDateString()}</Text>
+        </TouchableOpacity>
+
+        {showDatePicker && (
+            <DateTimePicker
+            value={expiryDate}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={(event, selectedDate) => {
+                setShowDatePicker(false);
+                if (selectedDate) setExpiryDate(selectedDate);
+            }}
+            />
+        )}
+
+        {/* 保存ボタン */}
+        <TouchableOpacity style={styles.saveButton} onPress={handleSubmit}>
+            <Text style={styles.saveButtonText}>保存して戻る</Text>
+        </TouchableOpacity>
+        </View>
+    );
+    }
+
+    const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#e0ecff',
-        padding: 0,
         paddingTop: 100,
         alignItems: 'center',
     },
@@ -58,75 +140,3 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
 });
-import { useRouter } from "expo-router";
-
-export default function Register() {
-    const router = useRouter();
-
-    const [name, setName] = useState("");
-    const [comment, setComment] = useState("");
-    const [expiryDate, setExpiryDate] = useState(new Date());
-    const [showDatePicker, setShowDatePicker] = useState(false);
-
-    const handleSubmit = () => {
-        if (!name) {
-        alert("食材名を入力してください");
-        return;
-        }
-        console.log({ name, comment, expiryDate });
-        router.back(); // 仮で戻るだけ
-    };
-
-    return (
-        <View style={styles.container}>
-            <Text style={styles.title}>食材を登録</Text>
-
-            {/* 食材名 */}
-            <Text style={styles.label}>📝 食材名</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="例：ヨーグルト"
-                value={name}
-                onChangeText={setName}
-            />
-
-            {/* コメント */}
-            <Text style={styles.label}>💬 コメント（任意）</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="例：早めに食べてね〜"
-                value={comment}
-                onChangeText={setComment}
-            />
-
-            {/* 賞味期限 */}
-            <Text style={styles.label}>📅 賞味期限</Text>
-            <TouchableOpacity
-                style={[styles.input, styles.dateButton]}
-                onPress={() => setShowDatePicker(true)}
-            >
-                <Text style={styles.dateText}>{expiryDate.toLocaleDateString()}</Text>
-            </TouchableOpacity>
-
-            {showDatePicker && (
-                <DateTimePicker
-                    value={expiryDate}
-                    mode="date"
-                    display={Platform.OS === "ios" ? "spinner" : "default"}
-                    onChange={(event, selectedDate) => {
-                        setShowDatePicker(false);
-                        if (selectedDate) setExpiryDate(selectedDate);
-                    }}
-                />
-            )}
-
-            {/* 保存ボタン */}
-            <TouchableOpacity
-                style={styles.saveButton}
-                onPress={handleSubmit}
-            >
-                <Text style={styles.saveButtonText}>保存して戻る</Text>
-            </TouchableOpacity>
-        </View>
-    );
-}

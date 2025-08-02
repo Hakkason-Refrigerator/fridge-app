@@ -1,75 +1,18 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView } from "react-native";
-import { Food } from "../types/food";
-import { addDays } from "../utils/dateUtils";
+import React, { useEffect } from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Alert } from "react-native";
 import Header from "../components/Header";
 import FoodCard from "../components/FoodCard";
 import { useRouter } from "expo-router";
+import { useFoodStore } from "../store/foodStore";
 
-// サンプルデータ（様々な期限の食材でテスト）
-const sampleFoods: Food[] = [
-  {
-    id: '1',
-    name: '牛乳',
-    expiryDate: addDays(new Date(), 2),
-    registeredDate: new Date(),
-    comment: '早めに飲んでくださいね〜',
-    isConsumed: false
-  },
-  {
-    id: '2',
-    name: '卵',
-    expiryDate: addDays(new Date(), 8),
-    registeredDate: new Date(),
-    comment: 'オムライス作ってもらえる？',
-    isConsumed: false
-  },
-  {
-    id: '3',
-    name: 'バナナ',
-    expiryDate: addDays(new Date(), 1),
-    registeredDate: new Date(),
-    comment: '明日には食べ頃だよ！',
-    isConsumed: false
-  },
-  {
-    id: '4',
-    name: 'パン',
-    expiryDate: addDays(new Date(), -1),
-    registeredDate: new Date(),
-    comment: 'ごめん...期限切れちゃった',
-    isConsumed: false
-  },
-  {
-    id: '5',
-    name: 'ヨーグルト',
-    expiryDate: addDays(new Date(), 0),
-    registeredDate: new Date(),
-    comment: '今日中に食べてね！',
-    isConsumed: false
-  },
-  {
-    id: '6',
-    name: 'リンゴ',
-    expiryDate: addDays(new Date(), 6),
-    registeredDate: new Date(),
-    comment: 'まだまだ新鮮だよ〜',
-    isConsumed: false
-  }
-];
+
 
 export default function Home() {
-  // 食材リストを状態として管理（削除機能のため）
-  const [foods, setFoods] = useState<Food[]>(sampleFoods);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const { foods, fetchFoods, deleteFood } = useFoodStore();
   const router = useRouter();
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000); // 1分ごとに更新
-
-    return () => clearInterval(timer);
+    fetchFoods();
   }, []);
 
   // 期限順にソートされた食材リストを取得
@@ -84,17 +27,22 @@ export default function Home() {
     router.push('/register');
   };
 
-  const handleFoodCardPress = (food: Food) => {
+  const handleFoodCardPress = (food: any) => {
     console.log(`${food.name}のカードが押されました！`);
     // 食材詳細画面に遷移
     router.push(`/${food.id}`);
   };
 
   // 食材削除のハンドラー関数
-  const handleDeleteFood = (foodId: string, foodName: string) => {
-    console.log(`${foodName}を削除します`);
-    // 食材リストから指定されたIDの食材を削除
-    setFoods(currentFoods => currentFoods.filter(food => food.id !== foodId));
+  const handleDeleteFood = (id: string, name: string) => {
+    Alert.alert(
+      '確認',
+      `「${name}」を食べたことにしますか？`,
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: '食べた！', style: 'destructive', onPress: () => deleteFood(id) },
+      ]
+    );
   };
 
   return (
