@@ -1,6 +1,8 @@
 // ocrUtils.ts - OCR機能のユーティリティ
 // OCR.space APIを使用した無料のOCR機能
 
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+
 /**
  * OCR.space APIを使用して画像からテキストを抽出
  * 月25,000リクエストまで無料
@@ -10,20 +12,69 @@ export async function extractTextFromImage(imageUri: string): Promise<string> {
     console.log('OCR処理開始 - 画像URI:', imageUri);
     
     // 画像を読み込んでファイルサイズを確認
+    let processedImageUri = imageUri;
     const response = await fetch(imageUri);
     const blob = await response.blob();
-    console.log('画像サイズ:', blob.size, 'bytes');
+    console.log('元の画像サイズ:', blob.size, 'bytes');
     
     if (blob.size === 0) {
       throw new Error('画像ファイルが空です');
     }
 
-    if (blob.size > 1024 * 1024) { // 1MB制限
-      throw new Error('画像ファイルが大きすぎます（1MB以下にしてください）');
+    // ファイルサイズが大きい場合はリサイズ
+    if (blob.size > 512 * 1024) { // 512KB以上の場合
+      console.log('画像が大きいためリサイズします...');
+      try {
+        const resizedImage = await manipulateAsync(
+          imageUri,
+          [
+            { resize: { width: 1024 } }, // 幅を1024pxにリサイズ
+          ],
+          {
+            compress: 0.7, // 圧縮率70%
+            format: SaveFormat.JPEG,
+          }
+        );
+        
+        processedImageUri = resizedImage.uri;
+        console.log('リサイズ完了 - 新しいURI:', processedImageUri);
+        
+        // リサイズ後のサイズを確認
+        const resizedResponse = await fetch(processedImageUri);
+        const resizedBlob = await resizedResponse.blob();
+        console.log('リサイズ後のサイズ:', resizedBlob.size, 'bytes');
+        
+      } catch (resizeError) {
+        console.warn('リサイズに失敗、元画像を使用:', resizeError);
+        // リサイズに失敗した場合は元画像を使用
+      }
+    }
+
+    // 最終的な画像を使用してOCR処理
+    const finalResponse = await fetch(processedImageUri);
+    const finalBlob = await finalResponse.blob();
+    
+    if (finalBlob.size === 0) {
+      throw new Error('リサイズ後の画像ファイルが空です');
+    }
+    
+    if (finalBlob.size > 1024 * 1024) { // 1MB制限
+      throw new Error('画像ファイルが大きすぎます。より小さな画像を使用してください。');
     }
 
     const formData = new FormData();
-    formData.append('file', blob as any, 'image.jpg');
+    
+    // React Nativeでのファイル添付方法を修正
+    const fileExtension = processedImageUri.includes('.jpg') || processedImageUri.includes('.jpeg') ? 'jpg' : 'png';
+    const fileName = `image.${fileExtension}`;
+    
+    // React Native用のファイル形式
+    formData.append('file', {
+      uri: processedImageUri,
+      type: 'image/jpeg',
+      name: fileName,
+    } as any);
+    
     formData.append('apikey', 'helloworld');
     formData.append('language', 'eng'); // 数字認識に強い英語モード
     formData.append('isOverlayRequired', 'false');
