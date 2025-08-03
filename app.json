@@ -13,14 +13,23 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "食材の期限をカメラで読み取るために使用します",
+        "NSPhotoLibraryUsageDescription": "食材の画像を選択するために使用します"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/icons/fridge-app-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

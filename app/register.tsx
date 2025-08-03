@@ -1,8 +1,10 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Platform, StyleSheet } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Platform, StyleSheet, Modal } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import { useFoodStore } from "../store/foodStore";
+import CameraOCR from "../components/CameraOCR";
+import { OCRResult } from "../utils/ocrUtils";
 
 export default function Register() {
     const router = useRouter();
@@ -11,6 +13,21 @@ export default function Register() {
     const [comment, setComment] = useState("");
     const [expiryDate, setExpiryDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showOCRModal, setShowOCRModal] = useState(false);
+
+    // OCR結果を処理する関数
+    const handleOCRResult = (result: OCRResult) => {
+        if (result.foodName) {
+            setName(result.foodName);
+        }
+        if (result.expiryDate) {
+            setExpiryDate(result.expiryDate);
+        }
+        // OCRで抽出した生テキストをコメントに追加（デバッグ用）
+        if (result.rawText && result.rawText.trim()) {
+            setComment(prev => prev ? `${prev}\n[OCR結果: ${result.rawText.slice(0, 50)}...]` : `[OCR結果: ${result.rawText.slice(0, 50)}...]`);
+        }
+    };
 
     const handleSubmit = async () => {
         if (!name) {
@@ -59,12 +76,22 @@ export default function Register() {
 
         {/* 賞味期限 */}
         <Text style={styles.label}>📅 賞味期限</Text>
-        <TouchableOpacity
-            style={[styles.input, styles.dateButton]}
-            onPress={() => setShowDatePicker(true)}
-        >
-            <Text style={styles.dateText}>{expiryDate.toLocaleDateString()}</Text>
-        </TouchableOpacity>
+        <View style={styles.dateContainer}>
+            <TouchableOpacity
+                style={[styles.input, styles.dateButton, { flex: 1, marginRight: 8 }]}
+                onPress={() => setShowDatePicker(true)}
+            >
+                <Text style={styles.dateText}>{expiryDate.toLocaleDateString()}</Text>
+            </TouchableOpacity>
+            
+            {/* OCRボタン */}
+            <TouchableOpacity
+                style={styles.ocrButton}
+                onPress={() => setShowOCRModal(true)}
+            >
+                <Text style={styles.ocrButtonText}>📷 OCR</Text>
+            </TouchableOpacity>
+        </View>
 
         {showDatePicker && (
             <DateTimePicker
@@ -82,11 +109,21 @@ export default function Register() {
         <TouchableOpacity style={styles.saveButton} onPress={handleSubmit}>
             <Text style={styles.saveButtonText}>保存して戻る</Text>
         </TouchableOpacity>
+
+        {/* OCRモーダル */}
+        <Modal
+            visible={showOCRModal}
+            animationType="slide"
+            presentationStyle="fullScreen"
+        >
+            <CameraOCR
+                onOCRResult={handleOCRResult}
+                onClose={() => setShowOCRModal(false)}
+            />
+        </Modal>
         </View>
     );
-    }
-
-    const styles = StyleSheet.create({
+}const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#e0ecff',
@@ -115,11 +152,30 @@ export default function Register() {
         marginBottom: 16,
         width: 330,
     },
+    dateContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        width: 330,
+    },
     dateButton: {
         alignItems: 'center',
     },
     dateText: {
         color: '#374151',
+    },
+    ocrButton: {
+        backgroundColor: '#10b981',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginLeft: 8,
+    },
+    ocrButtonText: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: '600',
     },
     saveButton: {
         backgroundColor: '#2563eb',
