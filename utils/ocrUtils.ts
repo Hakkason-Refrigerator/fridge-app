@@ -139,20 +139,21 @@ export async function extractTextFromImage(imageUri: string): Promise<string> {
 export function extractExpiryDate(text: string): Date | null {
   // 日付パターンを定義（より柔軟なパターンに変更）
   const datePatterns = [
-    // 2025.9.12, 25.9.12, 2025.09.12 (最も一般的)
+    // 年月日
     /(\d{2,4})\.(\d{1,2})\.(\d{1,2})/g,
-    // 2025/9/12, 25/9/12, 2025/09/12
     /(\d{2,4})\/(\d{1,2})\/(\d{1,2})/g,
-    // 2025-9-12, 25-9-12, 2025-09-12
     /(\d{2,4})-(\d{1,2})-(\d{1,2})/g,
-    // 2025年9月12日
     /(\d{2,4})年(\d{1,2})月(\d{1,2})日/g,
-    // 令和7年9月12日 (令和を西暦に変換)
     /令和(\d{1,2})年(\d{1,2})月(\d{1,2})日/g,
-    // スペース区切り: 2025 9 12
     /(\d{2,4})\s+(\d{1,2})\s+(\d{1,2})/g,
-    // 年月日が連続: 20250912
     /(\d{4})(\d{2})(\d{2})/g,
+    // 年月のみ（例: 2025.9, 25.9, 2025/9, 25/9, 2025-9, 25-9, 2025年9月, 令和7年9月, 2025 9）
+    /(\d{2,4})\.(\d{1,2})/g,
+    /(\d{2,4})\/(\d{1,2})/g,
+    /(\d{2,4})-(\d{1,2})/g,
+    /(\d{2,4})年(\d{1,2})月/g,
+    /令和(\d{1,2})年(\d{1,2})月/g,
+    /(\d{2,4})\s+(\d{1,2})/g,
   ];
 
   const cleanText = text.replace(/\s+/g, ''); // 空白を除去
@@ -170,19 +171,29 @@ export function extractExpiryDate(text: string): Date | null {
       try {
         let year: number;
         let month: number;
-        let day: number;
+        let day: number = 1; // デフォルトは1日
 
         if (pattern.source.includes('令和')) {
           // 令和年号を西暦に変換
           const reiwaYear = parseInt(match[1]);
           year = reiwaYear + 2018; // 令和1年 = 2019年
           month = parseInt(match[2]);
-          day = parseInt(match[3]);
+          day = match[3] ? parseInt(match[3]) : 1;
         } else if (pattern.source.includes('(\\d{4})(\\d{2})(\\d{2})')) {
           // 8桁連続数字の場合 (例: 20250912)
           year = parseInt(match[1]);
           month = parseInt(match[2]);
           day = parseInt(match[3]);
+        } else if (match.length === 3) {
+          // 年月のみ（dayが無い）
+          year = parseInt(match[1]);
+          month = parseInt(match[2]);
+          // 月末日を計算
+          day = new Date(year < 100 ? (year < 50 ? 2000 + year : 1900 + year) : year, month, 0).getDate();
+          // 2桁年の場合は20xxに変換
+          if (year < 100) {
+            year = year < 50 ? 2000 + year : 1900 + year;
+          }
         } else {
           year = parseInt(match[1]);
           month = parseInt(match[2]);
