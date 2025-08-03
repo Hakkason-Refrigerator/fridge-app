@@ -1,8 +1,8 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Alert } from "react-native";
 import Header from "../components/Header";
 import FoodCard from "../components/FoodCard";
-import Mascot from "../components/Mascot";
+import Mascot, { MascotRef } from "../components/Mascot";
 import { useRouter } from "expo-router";
 import { useFoodStore } from "../store/foodStore";
 import { supabase } from "../lib/supabase";
@@ -11,6 +11,7 @@ import { signInIfNeeded } from "../lib/auth";
 export default function Home() {
   const { foods, fetchFoods, deleteFood } = useFoodStore();
   const router = useRouter();
+  const mascotRef = useRef<MascotRef>(null);
 
   useEffect(() => {
     signInIfNeeded(); // ログインチェックを実行
@@ -47,13 +48,23 @@ export default function Home() {
   };
 
   // 食材削除のハンドラー関数
-  const handleDeleteFood = (id: string, name: string) => {
+  const handleDeleteFood = async (id: string, name: string) => {
     Alert.alert(
       '確認',
       `「${name}」を食べたことにしますか？`,
       [
         { text: 'キャンセル', style: 'cancel' },
-        { text: '食べた！', style: 'destructive', onPress: () => deleteFood(id) },
+        { 
+          text: '食べた！', 
+          style: 'destructive', 
+          onPress: async () => {
+            await deleteFood(id);
+            // マスコットに消費メッセージを表示
+            if (mascotRef.current?.showConsumedMessage) {
+              mascotRef.current.showConsumedMessage(name);
+            }
+          }
+        },
       ]
     );
   };
@@ -61,7 +72,7 @@ export default function Home() {
   return (
     <SafeAreaView style={styles.container}>
       <Header 
-        title="🧊 つめたみボイス"
+        title="タイトル絶賛募集中"
         subtitle="冷蔵庫の中の声に耳を傾けて..."
         showAddButton={true}
         onAddPress={handleAddPress}
@@ -89,7 +100,7 @@ export default function Home() {
       </ScrollView>
       
       {/* マスコットキャラクター */}
-      <Mascot />
+      <Mascot ref={mascotRef} />
     </SafeAreaView>
   );
 }
