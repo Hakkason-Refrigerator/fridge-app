@@ -72,11 +72,8 @@ export default function Home() {
   return (
     <SafeAreaView style={styles.container}>
       <Header 
-        title="タイトル絶賛募集中"
-        subtitle="冷蔵庫の中の声に耳を傾けて..."
         showAddButton={true}
         onAddPress={handleAddPress}
-        backgroundColor="#ffffffff"
       />
       
       <ScrollView style={styles.chatContainer} showsVerticalScrollIndicator={false}>
