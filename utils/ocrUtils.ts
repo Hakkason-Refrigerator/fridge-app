@@ -256,13 +256,13 @@ export function extractFoodName(text: string): string | null {
 export interface OCRResult {
   foodName?: string;
   expiryDate?: Date;
-  rawText: string;
+  rawText?: string; // オプショナルに変更
 }
 
 export function parseOCRResult(text: string): OCRResult {
   return {
     foodName: extractFoodName(text) || undefined,
     expiryDate: extractExpiryDate(text) || undefined,
-    rawText: text,
+    rawText: text, // 常にrawTextを含める（呼び出し側で制御）
   };
 }

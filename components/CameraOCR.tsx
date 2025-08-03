@@ -12,43 +12,6 @@ interface CameraOCRProps {
 export default function CameraOCR({ onOCRResult, onClose }: CameraOCRProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [debugMode, setDebugMode] = useState(false);
-
-  // デバッグ用：手動でテキストを入力してテスト
-  const testWithManualText = () => {
-    const testTexts = [
-      '2025.9.12',
-      '2025/9/12', 
-      '25.9.12',
-      '2025年9月12日',
-      '賞味期限 2025.9.12',
-      'ヨーグルト 2025.9.12',
-      '20250912',
-    ];
-
-    Alert.alert(
-      'デバッグモード - テキスト選択',
-      'テストするテキストを選択してください',
-      [
-        ...testTexts.map((text, index) => ({
-          text: text,
-          onPress: () => {
-            console.log('デバッグテスト - 入力テキスト:', text);
-            const result = parseOCRResult(text);
-            console.log('デバッグテスト - 解析結果:', result);
-            onOCRResult(result);
-            
-            Alert.alert(
-              'デバッグ結果',
-              `入力: ${text}\n食材名: ${result.foodName || 'なし'}\n期限日: ${result.expiryDate?.toLocaleDateString() || 'なし'}`,
-              [{ text: 'OK', onPress: onClose }]
-            );
-          }
-        })),
-        { text: 'キャンセル', style: 'cancel' as const }
-      ]
-    );
-  };
 
   // カメラで撮影
   const takePicture = async () => {
@@ -117,8 +80,16 @@ export default function CameraOCR({ onOCRResult, onClose }: CameraOCRProps) {
       const result = parseOCRResult(extractedText);
       console.log('解析結果:', result);
       
+      // 日付が認識できた場合は、rawTextを除いて返す
+      const cleanResult: OCRResult = {
+        foodName: result.foodName,
+        expiryDate: result.expiryDate,
+        // 日付が認識できなかった場合のみrawTextを含める
+        ...((!result.expiryDate) && { rawText: extractedText })
+      };
+      
       // 結果を親コンポーネントに渡す
-      onOCRResult(result);
+      onOCRResult(cleanResult);
       
       // 成功メッセージ
       let message = 'OCR処理が完了しました！\n\n';
@@ -193,15 +164,6 @@ export default function CameraOCR({ onOCRResult, onClose }: CameraOCRProps) {
             disabled={isProcessing}
           >
             <Text style={styles.buttonText}>🖼️ ギャラリーから選択</Text>
-          </TouchableOpacity>
-
-          {/* デバッグモードボタン */}
-          <TouchableOpacity 
-            style={[styles.button, styles.debugButton]} 
-            onPress={testWithManualText}
-            disabled={isProcessing}
-          >
-            <Text style={styles.buttonText}>🧪 テストモード</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -288,9 +250,6 @@ const styles = StyleSheet.create({
   },
   galleryButton: {
     backgroundColor: '#2196F3',
-  },
-  debugButton: {
-    backgroundColor: '#FF9800',
   },
   cancelButton: {
     backgroundColor: '#f5f5f5',
