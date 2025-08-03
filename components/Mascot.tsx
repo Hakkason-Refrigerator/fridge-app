@@ -1,75 +1,50 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { View, Text, Image, StyleSheet, Animated, TouchableOpacity } from 'react-native';
 import { useFoodStore } from '../store/foodStore';
-import { getExpiryInfo } from '../utils/expiryUtils';
+import { generateMascotMessage, generateConsumedMessage, generateAddedMessage } from '../utils/messageGenerator';
 
 interface MascotProps {
   style?: object;
 }
 
-export default function Mascot({ style }: MascotProps) {
+export interface MascotRef {
+  showConsumedMessage: (foodName: string) => void;
+  showAddedMessage: (foodName: string) => void;
+}
+
+const Mascot = forwardRef<MascotRef, MascotProps>(({ style }, ref) => {
   const { foods } = useFoodStore();
-  const [message, setMessage] = useState<string>('フリッジくんです！');
+  const [message, setMessage] = useState<string>('こんにちは！フリッジくんです！');
   const [tapCount, setTapCount] = useState<number>(0); // タップ回数で管理
   const [fadeAnim] = useState(new Animated.Value(1));
+  const [lastFoodCount, setLastFoodCount] = useState<number>(0);
 
   // メッセージを生成する関数
   const generateMessage = () => {
-    // 期限間近の食材を取得
-    const expiringFoods = foods.filter(food => {
-      if (food.isConsumed) return false;
-      const expiryInfo = getExpiryInfo(food.expiryDate, food.registeredDate);
-      return expiryInfo.status === 'critical' || expiryInfo.status === 'warning';
-    });
-
-    // 奇数回：警告メッセージ（期限間近の食材がある場合のみ）
-    if (tapCount % 2 === 1 && expiringFoods.length > 0) {
-      const foodNames = expiringFoods.slice(0, 2).map(food => food.name).join('、');
-      const warningMessages = [
-        `${foodNames}の期限が近いよ！`,
-        `${foodNames}を早めに使ってね！`,
-        `${foodNames}がピンチ！助けて！`,
-        `${foodNames}を忘れないで〜`,
-      ];
-      
-      if (expiringFoods.length > 2) {
-        warningMessages.push(`${foodNames}など${expiringFoods.length}個も期限が近いよ！`);
-        warningMessages.push(`たくさんの食材が待ってるよ〜`);
-      }
-      
-      return warningMessages[Math.floor(Math.random() * warningMessages.length)];
-    }
-
-    // 偶数回または期限間近の食材がない場合：励ましメッセージ
-    const encourageMessages = [
-      'みんな新鮮だね！',
-      '今日も冷蔵庫をチェックしてくれてありがとう！',
-      '食材を大切にしてくれて嬉しいよ！',
-      '何か料理を作ってみる？',
-      '冷蔵庫の管理、上手だね！',
-      '食材を無駄にしないのは素晴らしいよ！',
-      'また新しい食材を追加してみる？',
-      '今日もお疲れさま！',
-    ];
-    
-    return encourageMessages[Math.floor(Math.random() * encourageMessages.length)];
+    return generateMascotMessage(foods, tapCount);
   };
 
-  // デバッグ用のメッセージ生成ターミナル上で表示
-  // マスコットをタップしたときの処理
-  const handleMascotPress = () => {
-    console.log('マスコットがタップされました！');
-    console.log('現在のタップ回数:', tapCount);
-    console.log('現在のメッセージ:', message);
-    
-    const newMessage = generateMessage();
+  // 外部からメッセージを設定する関数
+  const showConsumedMessage = (foodName: string) => {
+    const newMessage = generateConsumedMessage(foodName);
     setMessage(newMessage);
-    setTapCount(prev => prev + 1);
-    
-    console.log('新しいメッセージ:', newMessage);
-    console.log('新しいタップ回数:', tapCount + 1);
-    
-    // メッセージ切り替えアニメーション
+    playMessageAnimation();
+  };
+
+  const showAddedMessage = (foodName: string) => {
+    const newMessage = generateAddedMessage(foodName);
+    setMessage(newMessage);
+    playMessageAnimation();
+  };
+
+  // refを通じて外部から呼び出せるようにする
+  useImperativeHandle(ref, () => ({
+    showConsumedMessage,
+    showAddedMessage,
+  }));
+
+  // メッセージアニメーション
+  const playMessageAnimation = () => {
     Animated.sequence([
       Animated.timing(fadeAnim, {
         toValue: 0.3,
@@ -84,13 +59,47 @@ export default function Mascot({ style }: MascotProps) {
     ]).start();
   };
 
-  // 初回表示時は何もしない（初期メッセージ「フリッジくんです！」のまま）
+  // マスコットをタップしたときの処理
+  const handleMascotPress = () => {
+    console.log('マスコットがタップされました！');
+    console.log('現在のタップ回数:', tapCount);
+    console.log('現在のメッセージ:', message);
+    
+    const newMessage = generateMessage();
+    setMessage(newMessage);
+    setTapCount(prev => prev + 1);
+    
+    console.log('新しいメッセージ:', newMessage);
+    console.log('新しいタップ回数:', tapCount + 1);
+    
+    playMessageAnimation();
+  };
+
+  // 食材の変化を検知
   useEffect(() => {
-    // 食材が変更された場合のみ、現在のタップ状態に応じたメッセージを再生成
-    if (tapCount > 0) {
+    const currentFoodCount = foods.filter(food => !food.isConsumed).length;
+    
+    // 食材が減った場合（消費された）
+    if (currentFoodCount < lastFoodCount && lastFoodCount > 0) {
+      // 最後に消費された食材名を特定できないので、一般的なメッセージ
+      const newMessage = generateConsumedMessage('食材');
+      setMessage(newMessage);
+      playMessageAnimation();
+    }
+    // 食材が増えた場合（追加された）
+    else if (currentFoodCount > lastFoodCount) {
+      // 最後に追加された食材名を特定できないので、一般的なメッセージ
+      const newMessage = generateAddedMessage('新しい食材');
+      setMessage(newMessage);
+      playMessageAnimation();
+    }
+    // 通常のメッセージ更新（タップされた後のみ）
+    else if (tapCount > 0) {
       const newMessage = generateMessage();
       setMessage(newMessage);
     }
+    
+    setLastFoodCount(currentFoodCount);
   }, [foods]);
 
   return (
@@ -118,7 +127,9 @@ export default function Mascot({ style }: MascotProps) {
       </TouchableOpacity>
     </View>
   );
-}
+});
+
+export default Mascot;
 
 const styles = StyleSheet.create({
   container: {

@@ -49,7 +49,7 @@ export function getExpiryInfo(expiryDate: Date, registeredDate?: Date): ExpiryIn
     // 3日以内
     status = 'warning';
     color = '#ffffffff';
-    backgroundColor = '#ffe380ff';
+    backgroundColor = '#fcd137ff';
   } else if (daysRemaining <= 7) {
     // 1週間以内
     status = 'good';

@@ -27,6 +27,7 @@ export default function FoodDetailScreen() {
 
   // 編集状態の管理
   const [isEditing, setIsEditing] = useState(false);
+  const [editedComment, setEditedComment] = useState(food?.comment || '');
   const [editedName, setEditedName] = useState(food?.name || '');
   const [editedExpiryDate, setEditedExpiryDate] = useState(
     food?.expiryDate.toISOString().split('T')[0] || ''
@@ -55,6 +56,7 @@ export default function FoodDetailScreen() {
         name: editedName,
         expiryDate: new Date(editedExpiryDate),
         registeredDate: new Date(editedRegisteredDate),
+        comment: editedComment,
       });
       Alert.alert('保存完了', '変更が保存されました', [
         { text: 'OK', onPress: () => setIsEditing(false) }
@@ -70,6 +72,7 @@ export default function FoodDetailScreen() {
     setEditedName(food.name);
     setEditedExpiryDate(food.expiryDate.toISOString().split('T')[0]);
     setEditedRegisteredDate(food.registeredDate.toISOString().split('T')[0]);
+    setEditedComment(food.comment || '');
     setIsEditing(false);
   };
 
@@ -89,8 +92,8 @@ export default function FoodDetailScreen() {
   // 期限情報を取得（メインページと同じ色を使用）
   const expiryInfo = getExpiryInfo(food.expiryDate, food.registeredDate);
   const daysDifference = Math.ceil((food.expiryDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-  const expiryStatus = daysDifference > 0 ? `あと${daysDifference}日` : 
-                      daysDifference === 0 ? '今日が期限' : `${Math.abs(daysDifference)}日経過`;
+  const expiryStatus = daysDifference > 0 ? `あと${daysDifference}日😃` : 
+                      daysDifference === 0 ? '今日が期限😰' : `${Math.abs(daysDifference)}日経過😱`;
 
   return (
     <ScrollView style={styles.container}>
@@ -123,9 +126,6 @@ export default function FoodDetailScreen() {
           ) : (
             <Text style={[styles.foodName, { color: expiryInfo.color }]}>{food.name}</Text>
           )}
-
-          {/* コメント - 表示のみ */}
-          <Text style={[styles.comment, { color: expiryInfo.color }]}>"{food.comment}"</Text>
         </View>
       </View>
       
@@ -171,9 +171,36 @@ export default function FoodDetailScreen() {
             )}
           </View>
           
-          <Text style={[styles.infoText, { color: expiryInfo.color }]}>
-            状態: {expiryStatus}
-          </Text>
+          {/* コメント/備考 - 編集可能 */}
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>メモ: </Text>
+            {isEditing ? (
+              <TextInput
+                style={styles.commentInput}
+                value={editedComment}
+                onChangeText={setEditedComment}
+                placeholder="保存場所、用途など"
+                multiline
+              />
+            ) : (
+              <Text style={styles.infoValue}>{food.comment || ''}</Text>
+            )}
+          </View>
+          
+          {/* 食材の状態表示 */}
+          <View style={styles.statusSection}>
+            <View style={[styles.statusBadge, { backgroundColor: expiryInfo.backgroundColor }]}>
+              <Text style={[styles.statusText, { color: expiryInfo.color }]}>
+                {expiryInfo.status === 'expired' ? '期限切れ' :
+                 expiryInfo.status === 'critical' ? '要注意' :
+                 expiryInfo.status === 'warning' ? '注意' :
+                 expiryInfo.status === 'good' ? '良好' : '新鮮'}
+              </Text>
+            </View>
+            <Text style={[styles.statusDetails, { color: expiryInfo.color === '#ffffffff' ? '#666' : expiryInfo.color }]}>
+              {expiryStatus}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.recipeSection}>
@@ -188,7 +215,7 @@ export default function FoodDetailScreen() {
               style={[styles.recipeButton, { backgroundColor: site.color }]}
               onPress={() => openRecipeUrl(generateRecipeUrl(food.name, site.urlTemplate), site.name)}
             >
-              <Text style={styles.recipeButtonText}>{site.name}で検索</Text>
+              <Text style={styles.recipeButtonText}>{site.name}で検索🔍</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -245,7 +272,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   editButtonText: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '600',
   },
   foodName: {
@@ -271,14 +298,13 @@ const styles = StyleSheet.create({
   },
   commentInput: {
     fontSize: 16,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginTop: 10,
+    color: '#333',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.5)',
-    paddingVertical: 5,
+    borderBottomColor: '#ddd',
+    paddingVertical: 2,
+    paddingHorizontal: 8,
     minWidth: 200,
-    minHeight: 40,
+    flex: 1,
   },
   infoSection: {
     backgroundColor: '#fff',
@@ -374,5 +400,23 @@ const styles = StyleSheet.create({
     color: '#ff4444',
     textAlign: 'center',
     marginTop: 50,
+  },
+  statusSection: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  statusBadge: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginBottom: 8,
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  statusDetails: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

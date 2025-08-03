@@ -56,7 +56,7 @@ export default function FoodCard({ food, onPress, onDelete, showDeleteButton = f
       {/* 中央：食材からのコメント（左揃え） */}
       {food.comment && (
         <View style={styles.messageContainer}>
-          <Text style={commentTextStyle}>💬 {food.comment}</Text>
+          <Text style={commentTextStyle}>💬メモ： {food.comment}</Text>
         </View>
       )}
       
