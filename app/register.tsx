@@ -11,7 +11,11 @@ export default function Register() {
 
     const [name, setName] = useState("");
     const [comment, setComment] = useState("");
-    const [expiryDate, setExpiryDate] = useState(new Date());
+    // タイムゾーンの影響を回避するため、今日の正午に設定
+    const [expiryDate, setExpiryDate] = useState(() => {
+        const today = new Date();
+        return new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12, 0, 0, 0);
+    });
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showOCRModal, setShowOCRModal] = useState(false);
 

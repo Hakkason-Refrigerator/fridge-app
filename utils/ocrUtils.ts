@@ -188,12 +188,13 @@ export function extractExpiryDate(text: string): Date | null {
           // 年月のみ（dayが無い）
           year = parseInt(match[1]);
           month = parseInt(match[2]);
-          // 月末日を計算
-          day = new Date(year < 100 ? (year < 50 ? 2000 + year : 1900 + year) : year, month, 0).getDate();
           // 2桁年の場合は20xxに変換
           if (year < 100) {
             year = year < 50 ? 2000 + year : 1900 + year;
           }
+          // 月末日を計算（タイムゾーンの影響を回避するため正午で計算）
+          const tempDate = new Date(year, month, 0, 12, 0, 0, 0);
+          day = tempDate.getDate();
         } else {
           year = parseInt(match[1]);
           month = parseInt(match[2]);
@@ -207,11 +208,14 @@ export function extractExpiryDate(text: string): Date | null {
 
         // 妥当な日付かチェック
         if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-          const date = new Date(year, month - 1, day);
+          // タイムゾーンの影響を回避するため、正午（12:00）に設定
+          const date = new Date(year, month - 1, day, 12, 0, 0, 0);
           console.log('作成された日付:', date.toLocaleDateString(), '有効性チェック中...');
           
           // 有効な日付で、未来の日付である場合のみ返す
-          if (date.getTime() > Date.now() - 86400000) { // 1日前まで許可
+          const today = new Date();
+          today.setHours(0, 0, 0, 0); // 今日の0時に設定
+          if (date.getTime() >= today.getTime() - 86400000) { // 1日前まで許可
             console.log('✅ 有効な期限日が見つかりました:', date.toLocaleDateString());
             return date;
           } else {
