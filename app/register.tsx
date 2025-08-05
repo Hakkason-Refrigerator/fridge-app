@@ -60,6 +60,14 @@ export default function Register() {
 
     return (
         <View style={styles.container}>
+        {/* 戻るボタン */}
+        <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
+        >
+            <Text style={styles.backButtonText}>← 戻る</Text>
+        </TouchableOpacity>
+
         <Text style={styles.title}>食材を登録</Text>
 
         {/* 食材名 */}
@@ -111,7 +119,7 @@ export default function Register() {
 
         {/* 保存ボタン */}
         <TouchableOpacity style={styles.saveButton} onPress={handleSubmit}>
-            <Text style={styles.saveButtonText}>保存して戻る</Text>
+            <Text style={styles.saveButtonText}>保存</Text>
         </TouchableOpacity>
 
         {/* OCRモーダル */}
@@ -133,6 +141,21 @@ export default function Register() {
         backgroundColor: '#e0ecff',
         paddingTop: 100,
         alignItems: 'center',
+    },
+    backButton: {
+        position: 'absolute',
+        top: 70,
+        left: 30,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        zIndex: 1,
+    },
+    backButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#2d3748',
     },
     title: {
         fontSize: 24,

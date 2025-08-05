@@ -91,7 +91,7 @@ export default function Home() {
         {sortedFoods.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>まだ食材が登録されていないようです</Text>
-            <Text style={styles.emptySubtext}>「+」ボタンから食材を追加してみましょう！</Text>
+            <Text style={styles.emptySubtext}>右下の「+」ボタンから食材を追加してみましょう！</Text>
           </View>
         )}
       </ScrollView>
