@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "fridge-app",
-    "slug": "fridge-app",
+    "name": "つめたみ！",
+    "slug": "tsumetami-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icons/fridge-app-icon.png",
