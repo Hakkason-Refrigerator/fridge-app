@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Alert } from "react-native";
 import Header from "../components/Header";
 import FoodCard from "../components/FoodCard";
@@ -6,12 +6,25 @@ import Mascot, { MascotRef } from "../components/Mascot";
 import { useRouter } from "expo-router";
 import { useFoodStore } from "../store/foodStore";
 import { supabase } from "../lib/supabase";
-import { signInIfNeeded } from "../lib/auth"; 
+import { signInIfNeeded } from "../lib/auth";
+import { 
+  sortFoods, 
+  toggleSort, 
+  getSortDisplayName, 
+  getSortDirectionIcon,
+  DEFAULT_SORT_CONFIG,
+  SortType, 
+  SortDirection 
+} from "../utils/sortUtils";
 
 export default function Home() {
   const { foods, fetchFoods, deleteFood } = useFoodStore();
   const router = useRouter();
   const mascotRef = useRef<MascotRef>(null);
+  
+  // ソート状態
+  const [sortType, setSortType] = useState<SortType>(DEFAULT_SORT_CONFIG.type);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(DEFAULT_SORT_CONFIG.direction);
 
   useEffect(() => {
     signInIfNeeded(); // ログインチェックを実行
@@ -29,11 +42,15 @@ export default function Home() {
     
   }, []);
 
-  // 期限順にソートされた食材リストを取得
-  const sortedFoods = [...foods].sort((a, b) => {
-    // 期限日で比較（期限が近い順）
-    return a.expiryDate.getTime() - b.expiryDate.getTime();
-  });
+  // ソート切り替えハンドラー
+  const handleSortChange = (newSortType: SortType) => {
+    const newSortConfig = toggleSort(sortType, sortDirection, newSortType);
+    setSortType(newSortConfig.type);
+    setSortDirection(newSortConfig.direction);
+  };
+
+  // ソートされた食材リストを取得
+  const sortedFoods = sortFoods(foods, sortType, sortDirection);
 
   //食材追加ページへ移動
   const handleAddPress = () => {
@@ -76,6 +93,36 @@ export default function Home() {
         onAddPress={handleAddPress}
       />
       
+      {/* ソートボタン */}
+      <View style={styles.sortContainer}>
+        <TouchableOpacity 
+          style={[styles.sortButton, sortType === 'expiry' && styles.activeSortButton]}
+          onPress={() => handleSortChange('expiry')}
+        >
+          <Text style={[styles.sortButtonText, sortType === 'expiry' && styles.activeSortButtonText]}>
+            {getSortDisplayName('expiry')} {sortType === 'expiry' && getSortDirectionIcon(sortDirection)}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.sortButton, sortType === 'name' && styles.activeSortButton]}
+          onPress={() => handleSortChange('name')}
+        >
+          <Text style={[styles.sortButtonText, sortType === 'name' && styles.activeSortButtonText]}>
+            {getSortDisplayName('name')} {sortType === 'name' && getSortDirectionIcon(sortDirection)}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.sortButton, sortType === 'registered' && styles.activeSortButton]}
+          onPress={() => handleSortChange('registered')}
+        >
+          <Text style={[styles.sortButtonText, sortType === 'registered' && styles.activeSortButtonText]}>
+            {getSortDisplayName('registered')} {sortType === 'registered' && getSortDirectionIcon(sortDirection)}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      
       <ScrollView style={styles.chatContainer} showsVerticalScrollIndicator={false}>
         {/* FoodCard表示 */}
         {sortedFoods.map((food) => (
@@ -106,6 +153,40 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#e0ecff', // 明るい青色
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#e0ecff',
+    gap: 8,
+  },
+  sortButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  activeSortButton: {
+    backgroundColor: '#ffffff',
+    borderColor: '#007bff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sortButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+  },
+  activeSortButtonText: {
+    color: '#007bff',
   },
   chatContainer: {
     flex: 1,
