@@ -90,8 +90,8 @@ export default function Home() {
         
         {sortedFoods.length === 0 && (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>まだ食材が登録されていません</Text>
-            <Text style={styles.emptySubtext}>「+」ボタンから食材を追加してみてください</Text>
+            <Text style={styles.emptyText}>まだ食材が登録されていないようです</Text>
+            <Text style={styles.emptySubtext}>「+」ボタンから食材を追加してみましょう！</Text>
           </View>
         )}
       </ScrollView>
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   chatContainer: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 6,
   },
   emptyState: {
     flex: 1,

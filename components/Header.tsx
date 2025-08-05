@@ -9,6 +9,11 @@ interface HeaderProps {
 export default function Header({ showAddButton, onAddPress }: HeaderProps) {
   return (
     <>
+      {/* タイトルヘッダー */}
+      <View style={styles.header}>
+        <Text style={styles.title}>🧊つめたみ🧊</Text>
+      </View>
+      
       {showAddButton && (
         <TouchableOpacity onPress={onAddPress} style={styles.addButton}>
           <Text style={styles.addButtonText}>+</Text>
@@ -19,9 +24,22 @@ export default function Header({ showAddButton, onAddPress }: HeaderProps) {
 }
 
 const styles = StyleSheet.create({
+  header: {
+    paddingTop: 15,
+    paddingBottom: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#e0ecff',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#2d3748',
+    textAlign: 'center',
+  },
   addButton: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 50,
     right: 20,
     backgroundColor: '#007bff',
     borderRadius: 40,
