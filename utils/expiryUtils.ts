@@ -1,6 +1,8 @@
 // expiryUtils.ts - 期限関連のユーティリティ関数
 // APIとの連携時にも使える汎用的な期限判定ロジック
 
+import { getDaysUntilExpiry } from './dateUtils';
+
 export type ExpiryStatus = 'fresh' | 'good' | 'warning' | 'critical' | 'expired';
 
 export interface ExpiryInfo {
@@ -8,22 +10,20 @@ export interface ExpiryInfo {
   daysRemaining: number;
   color: string;
   backgroundColor: string;
+  progressPercentage: number;  // バーの進行率（0-100%）
+  maxDays: number;            // 基準となる最大日数
 }
 
 /**
  * 食材の期限状態を判定し、表示用の情報を返す
  * @param expiryDate 賞味期限
  * @param registeredDate 登録日（オプション、今後のAPI対応用）
+ * @param maxDays バー表示の基準となる最大日数（デフォルト: 30日）
  * @returns 期限状態の情報
  */
-export function getExpiryInfo(expiryDate: Date, registeredDate?: Date): ExpiryInfo {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const expiry = new Date(expiryDate.getFullYear(), expiryDate.getMonth(), expiryDate.getDate());
-  
-  // 残り日数を計算
-  const timeDiff = expiry.getTime() - today.getTime();
-  const daysRemaining = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+export function getExpiryInfo(expiryDate: Date, registeredDate?: Date, maxDays: number = 30): ExpiryInfo {
+  // dateUtils.tsの関数を使用して日数計算
+  const daysRemaining = getDaysUntilExpiry(expiryDate);
   
   // 期限状態を判定
   let status: ExpiryStatus;
@@ -62,11 +62,24 @@ export function getExpiryInfo(expiryDate: Date, registeredDate?: Date): ExpiryIn
     backgroundColor = '#7bbeefff'; // 青色の薄い背景
   }
   
+  // バーの進行率を計算（0-100%）
+  // 期限切れの場合は0%、最大日数以上残っている場合は100%
+  let progressPercentage: number;
+  if (daysRemaining <= 0) {
+    progressPercentage = 0;  // 期限切れは0%
+  } else if (daysRemaining >= maxDays) {
+    progressPercentage = 100;  // 最大日数以上は100%
+  } else {
+    progressPercentage = Math.round((daysRemaining / maxDays) * 100);
+  }
+  
   return {
     status,
     daysRemaining,
     color,
-    backgroundColor
+    backgroundColor,
+    progressPercentage,
+    maxDays
   };
 }
 

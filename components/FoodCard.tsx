@@ -5,6 +5,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Food } from '../types/food';
 import { getExpiryInfo, getExpiryMessage } from '../utils/expiryUtils';
+import ExpiryProgressBar from './ExpiryProgressBar';
 
 // FoodCardコンポーネントのプロパティ型定義
 interface FoodCardProps {
@@ -59,6 +60,11 @@ export default function FoodCard({ food, onPress, onDelete, showDeleteButton = f
           <Text style={commentTextStyle}>💬メモ： {food.comment}</Text>
         </View>
       )}
+      
+      {/* 期限バー */}
+      <View style={styles.progressBarContainer}>
+        <ExpiryProgressBar expiryInfo={expiryInfo} />
+      </View>
       
       {/* 下部：食べたボタンを右下に配置 */}
       <View style={styles.bottomContainer}>
@@ -157,5 +163,11 @@ const styles = StyleSheet.create({
     fontSize: 16,              // フォントサイズを少し小さく（18→16）
     marginTop: 2,              // 上のマージンをさらに狭く（3→2）
     fontStyle: 'italic',       // 斜体
+  },
+  // 期限バーのコンテナ
+  progressBarContainer: {
+    paddingHorizontal: 12,     // 左右のマージン
+    paddingVertical: 6,        // 上下のマージン
+    backgroundColor: '#FFFFFF', // 白背景
   },
 });
