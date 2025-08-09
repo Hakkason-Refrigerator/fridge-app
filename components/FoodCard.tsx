@@ -5,7 +5,6 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Food } from '../types/food';
 import { getExpiryInfo, getExpiryMessage } from '../utils/expiryUtils';
-import ExpiryProgressBar from './ExpiryProgressBar';
 
 // FoodCardコンポーネントのプロパティ型定義
 interface FoodCardProps {
@@ -46,20 +45,12 @@ export default function FoodCard({ food, onPress, onDelete, showDeleteButton = f
 
   return (
     <TouchableOpacity onPress={onPress} style={[styles.card, style]}>
-      {/* カード上部：食材名（左上）と期限（右上） + 期限バー - 色付きヘッダー */}
+      {/* カード上部：食材名（左上）と期限（右上） - 色付きヘッダー */}
       <View style={headerStyle}>
-        {/* 食材名と期限の行 */}
-        <View style={styles.headerTextRow}>
-          {/* 食材名を左上に表示 */}
-          <Text style={textStyle}>{food.name}</Text>
-          {/* 期限を右上に表示 */}
-          <Text style={expiryTextStyle}>{expiryMessage}</Text>
-        </View>
-        
-        {/* 期限バー - ヘッダー内に配置 */}
-        <View style={styles.progressBarInHeader}>
-          <ExpiryProgressBar expiryInfo={expiryInfo} />
-        </View>
+        {/* 食材名を左上に表示 */}
+        <Text style={textStyle}>{food.name}</Text>
+        {/* 期限を右上に表示 */}
+        <Text style={expiryTextStyle}>{expiryMessage}</Text>
       </View>
       
       {/* 中央：食材からのコメント（左揃え） */}
@@ -102,22 +93,13 @@ const styles = StyleSheet.create({
   },
   // カードヘッダー（食材名と期限を横並びに配置、期限状態に応じて背景色が変化）
   cardHeader: {
-    flexDirection: 'column',          // 縦並び（テキスト行 + バー）
-    padding: 12,                      // ヘッダー内の余白を狭く（16→12）
-    borderTopLeftRadius: 8,           // 左上の角丸
-    borderTopRightRadius: 8,          // 右上の角丸
-    marginBottom: 0,                  // 下のマージンを削除
-  },
-  // ヘッダー内のテキスト行（食材名と期限）
-  headerTextRow: {
-    flexDirection: 'row',             // 横並び
-    justifyContent: 'space-between',  // 両端揃え（左上と右上）
-    alignItems: 'flex-start',         // 上揃え
-    marginBottom: 8,                  // バーとの間隔
-  },
-  // ヘッダー内の期限バー
-  progressBarInHeader: {
-    // バーはヘッダーの背景色と調和するようにスタイリング
+    flexDirection: 'row',         // 横並び
+    justifyContent: 'space-between', // 両端揃え（左上と右上）
+    alignItems: 'flex-start',     // 上揃え
+    padding: 12,                  // ヘッダー内の余白を狭く（16→12）
+    borderTopLeftRadius: 8,       // 左上の角丸
+    borderTopRightRadius: 8,      // 右上の角丸
+    marginBottom: 0,              // 下のマージンを削除
   },
   // 食材名のベーススタイル（文字色は動的に変更）
   foodName: {
