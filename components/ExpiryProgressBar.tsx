@@ -8,18 +8,26 @@ interface ExpiryProgressBarProps {
   expiryInfo: ExpiryInfo;
   showPercentage?: boolean;  // パーセンテージ表示の有無（デフォルト: false）
   height?: number;           // バーの高さ（デフォルト: 6）
+  useHeaderColor?: boolean;  // ヘッダーと同じ色を使用するか（デフォルト: true）
 }
 
 export default function ExpiryProgressBar({ 
   expiryInfo, 
   showPercentage = false, 
-  height = 6
+  height = 6,
+  useHeaderColor = true
 }: ExpiryProgressBarProps) {
-  const { progressPercentage, backgroundColor, status } = expiryInfo;
+  const { progressPercentage, backgroundColor } = expiryInfo;
+  
+  // ヘッダー内では背景を少し暗めに調整
+  const barBackgroundColor = useHeaderColor ? 'rgba(255, 255, 255, 0.3)' : '#E5E5E5';
+  // ヘッダー内では前景を少し明るめに調整
+  const barForegroundColor = useHeaderColor ? 'rgba(255, 255, 255, 0.8)' : backgroundColor;
   
   // バーの背景スタイル
   const barBackgroundStyle: ViewStyle = {
     ...styles.barBackground,
+    backgroundColor: barBackgroundColor,
     height,
   };
   
@@ -27,7 +35,7 @@ export default function ExpiryProgressBar({
   const barForegroundStyle: ViewStyle = {
     ...styles.barForeground,
     width: `${progressPercentage}%`,
-    backgroundColor,
+    backgroundColor: barForegroundColor,
     height,
   };
   
@@ -55,10 +63,10 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   barBackground: {
-    backgroundColor: '#E5E5E5',  // 薄いグレーの背景
     borderRadius: 3,
     overflow: 'hidden',
     flex: 1,
+    // backgroundColorは動的に設定
   },
   barForeground: {
     borderRadius: 3,

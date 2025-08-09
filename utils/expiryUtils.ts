@@ -17,11 +17,10 @@ export interface ExpiryInfo {
 /**
  * 食材の期限状態を判定し、表示用の情報を返す
  * @param expiryDate 賞味期限
- * @param registeredDate 登録日（オプション、今後のAPI対応用）
- * @param maxDays バー表示の基準となる最大日数（デフォルト: 30日）
+ * @param registeredDate 登録日（オプション、バーの基準計算に使用）
  * @returns 期限状態の情報
  */
-export function getExpiryInfo(expiryDate: Date, registeredDate?: Date, maxDays: number = 30): ExpiryInfo {
+export function getExpiryInfo(expiryDate: Date, registeredDate?: Date): ExpiryInfo {
   // dateUtils.tsの関数を使用して日数計算
   const daysRemaining = getDaysUntilExpiry(expiryDate);
   
@@ -62,15 +61,36 @@ export function getExpiryInfo(expiryDate: Date, registeredDate?: Date, maxDays: 
     backgroundColor = '#7bbeefff'; // 青色の薄い背景
   }
   
-  // バーの進行率を計算（0-100%）
-  // 期限切れの場合は0%、最大日数以上残っている場合は100%
+  // バーの進行率を計算
+  // 登録日から期限日までの全期間を基準とする
   let progressPercentage: number;
-  if (daysRemaining <= 0) {
-    progressPercentage = 0;  // 期限切れは0%
-  } else if (daysRemaining >= maxDays) {
-    progressPercentage = 100;  // 最大日数以上は100%
+  let maxDays: number;
+  
+  if (registeredDate) {
+    // 登録日が提供されている場合：登録日から期限日までの期間を基準とする
+    const totalDays = Math.ceil((expiryDate.getTime() - registeredDate.getTime()) / (1000 * 60 * 60 * 24));
+    maxDays = totalDays;
+    
+    if (totalDays <= 0) {
+      // 登録日が期限日以降の場合（異常データ）
+      progressPercentage = 0;
+    } else if (daysRemaining <= 0) {
+      // 期限切れは0%
+      progressPercentage = 0;
+    } else {
+      // 残り日数 / 全期間 * 100
+      progressPercentage = Math.round((daysRemaining / totalDays) * 100);
+    }
   } else {
-    progressPercentage = Math.round((daysRemaining / maxDays) * 100);
+    // 登録日が提供されていない場合：従来通り30日を基準とする
+    maxDays = 30;
+    if (daysRemaining <= 0) {
+      progressPercentage = 0;
+    } else if (daysRemaining >= maxDays) {
+      progressPercentage = 100;
+    } else {
+      progressPercentage = Math.round((daysRemaining / maxDays) * 100);
+    }
   }
   
   return {
