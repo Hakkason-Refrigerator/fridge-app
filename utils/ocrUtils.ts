@@ -76,11 +76,11 @@ export async function extractTextFromImage(imageUri: string): Promise<string> {
     } as any);
     
     formData.append('apikey', 'helloworld');
-    formData.append('language', 'eng'); // 数字認識に強い英語モード
+    formData.append('language', 'jpn'); // 日本語モードに変更（数字も認識可能）
     formData.append('isOverlayRequired', 'false');
     formData.append('detectOrientation', 'true');
     formData.append('scale', 'true');
-    formData.append('OCREngine', '1'); // エンジン1（基本的だが安定）
+    formData.append('OCREngine', '2'); // エンジン2（より高精度）
     formData.append('isTable', 'false');
 
     console.log('OCR.space APIにリクエスト送信中...');
@@ -139,24 +139,26 @@ export async function extractTextFromImage(imageUri: string): Promise<string> {
 export function extractExpiryDate(text: string): Date | null {
   // 日付パターンを定義（より柔軟なパターンに変更）
   const datePatterns = [
-    // 年月日
-    /(\d{2,4})\.(\d{1,2})\.(\d{1,2})/g,
-    /(\d{2,4})\/(\d{1,2})\/(\d{1,2})/g,
-    /(\d{2,4})-(\d{1,2})-(\d{1,2})/g,
-    /(\d{2,4})年(\d{1,2})月(\d{1,2})日/g,
+    // 年月日（様々な区切り文字）
+    /(\d{2,4})[\.\/\-年](\d{1,2})[\.\/\-月](\d{1,2})[日]?/g,
+    /(\d{4})(\d{2})(\d{2})/g, // 8桁連続数字
+    /(\d{2})(\d{2})(\d{2})/g, // 6桁連続数字（YYMMDD）
+    
+    // 年月のみ（様々な区切り文字）
+    /(\d{2,4})[\.\/\-年](\d{1,2})[月]?/g,
+    
+    // 令和年号
     /令和(\d{1,2})年(\d{1,2})月(\d{1,2})日/g,
-    /(\d{2,4})\s+(\d{1,2})\s+(\d{1,2})/g,
-    /(\d{4})(\d{2})(\d{2})/g,
-    // 年月のみ（例: 2025.9, 25.9, 2025/9, 25/9, 2025-9, 25-9, 2025年9月, 令和7年9月, 2025 9）
-    /(\d{2,4})\.(\d{1,2})/g,
-    /(\d{2,4})\/(\d{1,2})/g,
-    /(\d{2,4})-(\d{1,2})/g,
-    /(\d{2,4})年(\d{1,2})月/g,
     /令和(\d{1,2})年(\d{1,2})月/g,
+    /R(\d{1,2})[\.\/\-](\d{1,2})[\.\/\-](\d{1,2})/g, // R2.12.31形式
+    /R(\d{1,2})[\.\/\-](\d{1,2})/g, // R2.12形式
+    
+    // スペース区切り
+    /(\d{2,4})\s+(\d{1,2})\s+(\d{1,2})/g,
     /(\d{2,4})\s+(\d{1,2})/g,
   ];
 
-  const cleanText = text.replace(/\s+/g, ''); // 空白を除去
+  const cleanText = text.replace(/[Oo0]/g, '0').replace(/[Il1]/g, '1'); // OCR誤認識の修正
   console.log('期限抽出処理 - 入力テキスト:', text);
   console.log('期限抽出処理 - クリーン後:', cleanText);
 
@@ -173,7 +175,7 @@ export function extractExpiryDate(text: string): Date | null {
         let month: number;
         let day: number = 1; // デフォルトは1日
 
-        if (pattern.source.includes('令和')) {
+        if (pattern.source.includes('令和') || pattern.source.includes('R')) {
           // 令和年号を西暦に変換
           const reiwaYear = parseInt(match[1]);
           year = reiwaYear + 2018; // 令和1年 = 2019年
@@ -182,6 +184,12 @@ export function extractExpiryDate(text: string): Date | null {
         } else if (pattern.source.includes('(\\d{4})(\\d{2})(\\d{2})')) {
           // 8桁連続数字の場合 (例: 20250912)
           year = parseInt(match[1]);
+          month = parseInt(match[2]);
+          day = parseInt(match[3]);
+        } else if (pattern.source.includes('(\\d{2})(\\d{2})(\\d{2})')) {
+          // 6桁連続数字の場合 (例: 250912 = 2025/09/12)
+          let yearPart = parseInt(match[1]);
+          year = yearPart < 50 ? 2000 + yearPart : 1900 + yearPart;
           month = parseInt(match[2]);
           day = parseInt(match[3]);
         } else if (match.length === 3) {
@@ -271,13 +279,107 @@ export function extractFoodName(text: string): string | null {
 export interface OCRResult {
   foodName?: string;
   expiryDate?: Date;
-  rawText?: string; // オプショナルに変更
+  rawText?: string;
+}
+
+/**
+ * テキストから関連性の高い情報のみを抽出してメモとして使用
+ */
+function extractRelevantText(text: string, foundDate?: Date | null, foundFood?: string | null): string | undefined {
+  const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+  
+  // 除外すべきパターン
+  const excludePatterns = [
+    /^\d+$/, // 数字のみの行
+    /^[A-Z]+$/, // 大文字のみの行（製品コードなど）
+    /製造|製造日|製造年月日|MFG|MFD/i, // 製造日関連
+    /販売|販売者|発売|発売元/i, // 販売者情報
+    /株式会社|有限会社|合同会社|\(株\)|\(有\)/i, // 会社名
+    /保存|保管|冷蔵|冷凍|常温/i, // 保存方法
+    /カロリー|kcal|エネルギー/i, // 栄養情報
+    /内容量|容量|重量|g|ml|kg/i, // 容量情報
+    /価格|円|￥|\$|税込|税抜/i, // 価格情報
+    /www\.|http|\.com|\.co\.jp/i, // URL
+    /^\d{13}$/, // JAN code (13桁)
+    /^\d{8}$/, // 商品コード等
+    /賞味|消費|期限|まで|べスト/i, // 期限関連の文言（日付自体は除外しない）
+  ];
+
+  const relevantLines: string[] = [];
+  
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    
+    // 短すぎる、または長すぎる行をスキップ
+    if (trimmedLine.length < 2 || trimmedLine.length > 50) {
+      continue;
+    }
+    
+    // 除外パターンに一致する行をスキップ
+    let shouldExclude = false;
+    for (const pattern of excludePatterns) {
+      if (pattern.test(trimmedLine)) {
+        shouldExclude = true;
+        break;
+      }
+    }
+    
+    if (shouldExclude) {
+      continue;
+    }
+    
+    // 日付文字列が含まれている場合はスキップ（既に期限日として抽出済み）
+    if (foundDate) {
+      const hasDate = extractExpiryDate(trimmedLine) !== null;
+      if (hasDate) {
+        continue;
+      }
+    }
+    
+    // 既に食材名として抽出されている場合はスキップ
+    if (foundFood && trimmedLine.includes(foundFood)) {
+      continue;
+    }
+    
+    relevantLines.push(trimmedLine);
+  }
+  
+  // 3行以内の関連性の高い情報のみを結合
+  const relevantText = relevantLines.slice(0, 3).join(' / ');
+  
+  // 結果が短すぎる場合は除外
+  return relevantText.length > 3 ? relevantText : undefined;
 }
 
 export function parseOCRResult(text: string): OCRResult {
+  const foodName = extractFoodName(text);
+  const expiryDate = extractExpiryDate(text);
+  
+  // 期限日が見つかった場合は、rawTextは一切含めない
+  let rawText: string | undefined;
+  
+  if (expiryDate) {
+    // 期限日が見つかった場合は、コメントには何も表示しない
+    rawText = undefined;
+  } else {
+    // 期限日が見つからなかった場合のみ、関連性の高いテキストを含める
+    if (foodName) {
+      // 食材名のみが見つかった場合は、関連性の高い情報のみを抽出
+      rawText = extractRelevantText(text, null, foodName);
+    } else {
+      // 何も見つからなかった場合は、元のテキストを簡潔にしたものを使用
+      const cleanedText = text
+        .split(/\r?\n/)
+        .filter(line => line.trim().length > 2 && line.trim().length < 50)
+        .slice(0, 2)
+        .join(' / ');
+      rawText = cleanedText.length > 3 ? cleanedText : undefined;
+    }
+  }
+  
   return {
-    foodName: extractFoodName(text) || undefined,
-    expiryDate: extractExpiryDate(text) || undefined,
-    rawText: text, // 常にrawTextを含める（呼び出し側で制御）
+    foodName: foodName || undefined,
+    expiryDate: expiryDate || undefined,
+    rawText: rawText,
   };
 }

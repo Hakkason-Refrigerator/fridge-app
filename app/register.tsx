@@ -27,12 +27,6 @@ export default function Register() {
         if (result.expiryDate) {
             setExpiryDate(result.expiryDate);
         }
-        // 日付が認識できなかった場合のみ、rawTextをコメントに追加
-        if (result.rawText && result.rawText.trim() && !result.expiryDate) {
-            const rawTextContent = result.rawText.slice(0, 50);
-            setComment(prev => prev ?
-                 `${prev}\n[OCR結果: ${rawTextContent}...]` : `[OCR結果: ${rawTextContent}...]`);
-        }
     };
 
     const handleSubmit = async () => {

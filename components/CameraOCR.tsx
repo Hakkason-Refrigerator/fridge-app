@@ -74,26 +74,20 @@ export default function CameraOCR({ onOCRResult, onClose }: CameraOCRProps) {
     setIsProcessing(true);
     try {
       console.log('OCR処理開始...');
-      const extractedText = await extractTextFromImage(imageUri);
-      console.log('抽出されたテキスト:', extractedText);
+      const text = await extractTextFromImage(imageUri);
+      console.log('抽出されたテキスト:', text);
       
-      const result = parseOCRResult(extractedText);
-      console.log('解析結果:', result);
+      // OCR結果を解析（改善されたフィルタリング処理を使用）
+      const result = parseOCRResult(text);
       
-      // 日付が認識できた場合は、rawTextを除いて返す
-      const cleanResult: OCRResult = {
-        foodName: result.foodName,
-        expiryDate: result.expiryDate,
-        // 日付が認識できなかった場合のみrawTextを含める
-        ...((!result.expiryDate) && { rawText: extractedText })
-      };
+      console.log('OCR解析結果:', result);
       
-      // 結果を親コンポーネントに渡す
-      onOCRResult(cleanResult);
+      // 結果をそのまま親コンポーネントに渡す
+      onOCRResult(result);
       
       // 成功メッセージ
       let message = 'OCR処理が完了しました！\n\n';
-      message += `抽出されたテキスト:\n${extractedText.slice(0, 100)}...\n\n`;
+      message += `抽出されたテキスト:\n${text.slice(0, 100)}...\n\n`;
       
       if (result.foodName) {
         message += `食材名: ${result.foodName}\n`;
@@ -177,7 +171,7 @@ export default function CameraOCR({ onOCRResult, onClose }: CameraOCRProps) {
 
         {/* 使い方のヒント */}
         <View style={styles.tipsContainer}>
-          <Text style={styles.tipsTitle}>💡 撮影のコツ</Text>
+          <Text style={styles.tipsTitle}>�� 撮影のコツ</Text>
           <Text style={styles.tipsText}>• 期限部分にピントを合わせる</Text>
           <Text style={styles.tipsText}>• 明るい場所で撮影する</Text>
           <Text style={styles.tipsText}>• 文字が水平になるように撮影する</Text>
